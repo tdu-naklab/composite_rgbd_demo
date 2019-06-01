@@ -40,7 +40,7 @@ def main():
             # 指定距離以上を無視した深度画像
             depth_image = np.asanyarray(depth_frame.get_data())
             depth_filtered_image = (depth_image < max_dist) * depth_image
-            depth_gray_image = (depth_filtered_image * 255. / max_dist).reshape((HEIGHT, WIDTH)).astype(np.uint8)
+            depth_gray_filtered_image = (depth_filtered_image * 255. / max_dist).reshape((HEIGHT, WIDTH)).astype(np.uint8)
 
             # RGB画像
             color_image = np.asanyarray(color_frame.get_data())
@@ -55,6 +55,13 @@ def main():
             # 表示
             cv2.namedWindow('demo', cv2.WINDOW_AUTOSIZE)
             cv2.imshow('demo', composite_image)
+
+            description1 = np.hstack((depth_color_image, cv2.cvtColor(depth_gray_filtered_image, cv2.COLOR_GRAY2BGR)))
+            description2 = np.hstack((color_image, color_filtered_image))
+            description_image = np.vstack((description1, description2))
+            cv2.namedWindow("demo2", cv2.WINDOW_AUTOSIZE)
+            cv2.imshow('demo2', description_image)
+
             if cv2.waitKey(1) & 0xff == 27:
                 break
 
