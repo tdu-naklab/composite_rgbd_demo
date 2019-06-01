@@ -6,6 +6,7 @@ WIDTH = 640
 HEIGHT = 480
 FPS = 60
 THRESHOLD = 1.5  # これより遠い距離の画素を無視する
+BG_PATH = "./image.png"  # 背景画像のパス
 
 
 def main():
@@ -18,6 +19,8 @@ def main():
     profile = pipeline.start(config)
     depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
     max_dist = THRESHOLD/depth_scale
+
+    bg_image = cv2.imread(BG_PATH, cv2.IMREAD_COLOR)
 
     try:
         while True:
@@ -45,9 +48,13 @@ def main():
             # 指定距離以上を無視したRGB画像
             color_filtered_image = (depth_filtered_image.reshape((HEIGHT, WIDTH, 1)) > 0) * color_image
 
+            # 背景合成
+            background_masked_image = (depth_filtered_image.reshape((HEIGHT, WIDTH, 1)) == 0) * bg_image
+            composite_image = background_masked_image + color_filtered_image
+
             # 表示
             cv2.namedWindow('demo', cv2.WINDOW_AUTOSIZE)
-            cv2.imshow('demo', color_filtered_image)
+            cv2.imshow('demo', composite_image)
             if cv2.waitKey(1) & 0xff == 27:
                 break
 
