@@ -7,6 +7,8 @@ HEIGHT = 480
 FPS = 60
 THRESHOLD = 1.5  # これより遠い距離の画素を無視する
 BG_PATH = "./image.png"  # 背景画像のパス
+MEDIAN_KERNEL_SIZE = 9
+GAUSSIAN_KERNEL_SIZE = 9
 
 
 def main():
@@ -35,32 +37,38 @@ def main():
 
             # 深度画像
             depth_color_frame = rs.colorizer().colorize(depth_frame)
-            depth_color_image = np.asanyarray(depth_color_frame.get_data())
+            depth_color_image = np.asanyarray(depth_color_frame.get_data())  # 深度画像(彩色済み)
 
             # 指定距離以上を無視した深度画像
             depth_image = np.asanyarray(depth_frame.get_data())
             depth_filtered_image = (depth_image < max_dist) * depth_image
             depth_gray_filtered_image = (depth_filtered_image * 255. / max_dist).reshape((HEIGHT, WIDTH)).astype(np.uint8)
+            ret, depth_mask = cv2.threshold(depth_gray_filtered_image, 1, 255, cv2.THRESH_BINARY)
+            depth_mask = cv2.medianBlur(depth_mask, MEDIAN_KERNEL_SIZE)
+            depth_mask = cv2.GaussianBlur(depth_mask, (GAUSSIAN_KERNEL_SIZE, GAUSSIAN_KERNEL_SIZE), 0)
+            depth_mask = cv2.cvtColor(depth_mask, cv2.COLOR_GRAY2BGR)  # 深度マスク画像
 
             # RGB画像
-            color_image = np.asanyarray(color_frame.get_data())
+            color_image = np.asanyarray(color_frame.get_data())  # RGB画像
 
             # 指定距離以上を無視したRGB画像
-            color_filtered_image = (depth_filtered_image.reshape((HEIGHT, WIDTH, 1)) > 0) * color_image
+            depth_mask_norm = (depth_mask / 255.0)
+            color_filtered_image = (depth_mask_norm * color_image).astype(np.uint8)  # マスク済みRGB画像
 
             # 背景合成
-            background_masked_image = (depth_filtered_image.reshape((HEIGHT, WIDTH, 1)) == 0) * bg_image
-            composite_image = background_masked_image + color_filtered_image
+            composite_image = bg_image
+            composite_image = (composite_image.astype(np.float32) * (1 - depth_mask_norm)).astype(np.uint8)
+            composite_image[0:HEIGHT, 0:WIDTH] += (color_image * depth_mask_norm).astype(np.uint8)
 
-            # 表示
+            # 表示`
             cv2.namedWindow('demo', cv2.WINDOW_AUTOSIZE)
-            cv2.imshow('demo', composite_image)
+            cv2.imshow('demo', composite_image)  # 合成画像
 
-            description1 = np.hstack((depth_color_image, cv2.cvtColor(depth_gray_filtered_image, cv2.COLOR_GRAY2BGR)))
-            description2 = np.hstack((color_image, color_filtered_image))
-            description_image = np.vstack((description1, description2))
-            cv2.namedWindow("demo2", cv2.WINDOW_AUTOSIZE)
-            cv2.imshow('demo2', description_image)
+            # description1 = np.hstack((depth_color_image, cv2.cvtColor(depth_mask, cv2.COLOR_GRAY2BGR)))
+            # description2 = np.hstack((color_image, color_filtered_image))
+            # description_image = np.vstack((description1, description2))
+            # cv2.namedWindow("demo2", cv2.WINDOW_AUTOSIZE)
+            # cv2.imshow('demo2', description_image)
 
             if cv2.waitKey(1) & 0xff == 27:
                 break
