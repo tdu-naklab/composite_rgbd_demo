@@ -64,11 +64,11 @@ def main():
             cv2.namedWindow('demo', cv2.WINDOW_AUTOSIZE)
             cv2.imshow('demo', composite_image)  # 合成画像
 
-            # description1 = np.hstack((depth_color_image, cv2.cvtColor(depth_mask, cv2.COLOR_GRAY2BGR)))
-            # description2 = np.hstack((color_image, color_filtered_image))
-            # description_image = np.vstack((description1, description2))
-            # cv2.namedWindow("demo2", cv2.WINDOW_AUTOSIZE)
-            # cv2.imshow('demo2', description_image)
+            description1 = np.hstack((depth_color_image, depth_mask))
+            description2 = np.hstack((color_image, color_filtered_image))
+            description_image = np.vstack((description1, description2))
+            cv2.namedWindow("demo2", cv2.WINDOW_AUTOSIZE)
+            cv2.imshow('demo2', description_image)
 
             if cv2.waitKey(1) & 0xff == 27:
                 break
